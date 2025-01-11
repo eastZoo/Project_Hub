@@ -3,3 +3,8 @@
 - 1. 프로그램 실행 시 루트 프로젝트 폴더 경로를 설정해주어야 합니다.
 - 2. 프로젝트 폴더 경로는 config.json 파일에 저장됩니다.
 - 3. 프로젝트 오픈 시 프로젝트 폴더 경로에서 git pull 과 npm i 를 실행합니다.
+
+
+# exe 파일 생성 방법
+pyinstaller --onefile --noconsole --icon=app_icon.ico --add-data "app_icon.ico;." --add-data "config.json;." main.py
+

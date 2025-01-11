@@ -142,13 +142,26 @@ class ProjectOpenerApp:
     def get_editor_path(self, editor):
         paths = {
             "vscode": os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Programs', 'Microsoft VS Code', 'Code.exe'),
-            "cursor": os.path.join(os.environ.get('ProgramFiles', ''), 'Cursor', 'Cursor.exe')
+            "cursor": [
+                os.path.join(os.environ.get('ProgramFiles', ''), 'Cursor', 'Cursor.exe'),
+                os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Programs', 'cursor', 'Cursor.exe')
+            ]
         }
-        path = paths.get(editor, "")
-        if not os.path.exists(path):
-            messagebox.showerror("Error", f"{editor.capitalize()}가 설치되어 있지 않습니다.")
+        
+        if editor == "cursor":
+            # cursor의 경우 여러 경로를 확인
+            for cursor_path in paths[editor]:
+                if os.path.exists(cursor_path):
+                    return cursor_path
+            messagebox.showerror("Error", "Cursor가 설치되어 있지 않습니다.")
             return None
-        return path
+        else:
+            # vscode 등 다른 에디터의 경우 기존 로직 유지
+            path = paths.get(editor, "")
+            if not os.path.exists(path):
+                messagebox.showerror("Error", f"{editor.capitalize()}가 설치되어 있지 않습니다.")
+                return None
+            return path
 
     def create_progress_window(self):
         progress_window = tk.Toplevel(self.root)
