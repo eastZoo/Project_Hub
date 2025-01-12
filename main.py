@@ -14,7 +14,7 @@ class ProjectOpenerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Project Hub")
-        self.root.geometry("600x600")
+        self.root.geometry("600x650")
         self.root.resizable(False, False)
         self.root.configure(bg="#f0f0f0")
         
@@ -27,6 +27,8 @@ class ProjectOpenerApp:
         self.dev_path = config.get("dev_path", "")
         self.favorites = config.get("favorites", [])
         self.editor = config.get("editor", "vscode")
+        self.git_pull_enabled = config.get("git_pull_enabled", True)
+        self.npm_install_enabled = config.get("npm_install_enabled", True)
         
         # 스타일 설정
         style = ttk.Style()
@@ -48,6 +50,29 @@ class ProjectOpenerApp:
         self.editor_var = tk.StringVar(value=self.editor)
         tk.Radiobutton(self.editor_frame, text="VS Code", variable=self.editor_var, value="vscode", bg="#f0f0f0").pack(side=tk.LEFT, padx=5)
         tk.Radiobutton(self.editor_frame, text="Cursor", variable=self.editor_var, value="cursor", bg="#f0f0f0").pack(side=tk.LEFT, padx=5)
+
+        # 편집기 선택 UI 아래에 체크박스 프레임 추가
+        self.checkbox_frame = tk.Frame(root, bg="#f0f0f0")
+        self.checkbox_frame.pack(pady=5)
+        
+        self.run_git_pull = tk.BooleanVar(value=self.git_pull_enabled)
+        self.run_npm_install = tk.BooleanVar(value=self.npm_install_enabled)
+        
+        tk.Checkbutton(
+            self.checkbox_frame, 
+            text="git pull 실행", 
+            variable=self.run_git_pull,
+            command=self.save_checkbox_state,
+            bg="#f0f0f0"
+        ).pack(side=tk.LEFT, padx=5)
+        
+        tk.Checkbutton(
+            self.checkbox_frame, 
+            text="npm install 실행", 
+            variable=self.run_npm_install,
+            command=self.save_checkbox_state,
+            bg="#f0f0f0"
+        ).pack(side=tk.LEFT, padx=5)
 
         # 메인 프로젝트 및 하위 프로젝트 리스트
         self.project_frame = tk.Frame(root, bg="#f0f0f0")
@@ -91,10 +116,15 @@ class ProjectOpenerApp:
         config = {
             "dev_path": self.dev_path,
             "favorites": self.favorites,
-            "editor": self.editor_var.get()
+            "editor": self.editor_var.get(),
+            "git_pull_enabled": self.run_git_pull.get(),
+            "npm_install_enabled": self.run_npm_install.get()
         }
         with open(CONFIG_FILE, "w") as f:
             json.dump(config, f)
+
+    def save_checkbox_state(self):
+        self.save_config()
 
     def select_dev_folder(self):
         dev_path = filedialog.askdirectory(title="Select Dev Folder")
@@ -186,14 +216,15 @@ class ProjectOpenerApp:
 
     def process_project(self, folder_path, project_name, progress_window):
         try:
-            self.progress_label.config(text=f"{project_name}: git pull 실행 중...")
-            subprocess.run(['git', 'pull'], cwd=folder_path, check=True)
+            if self.run_git_pull.get():
+                self.progress_label.config(text=f"{project_name}: git pull 실행 중...")
+                subprocess.run(['git', 'pull'], cwd=folder_path, check=True)
             
-            if os.path.exists(os.path.join(folder_path, 'package.json')):
+            if self.run_npm_install.get() and os.path.exists(os.path.join(folder_path, 'package.json')):
                 self.progress_label.config(text=f"{project_name}: npm install 실행 중...")
                 subprocess.run([self.npm_path, 'i'], cwd=folder_path, check=True)
             
-            return None  # 성공 시 None 반환
+            return None
         except subprocess.CalledProcessError as e:
             return f"{project_name}: {'git pull' if 'git' in str(e) else 'npm i'} 실패"
 
